@@ -30,6 +30,8 @@ public class RoomServiceImpl implements RoomService {
         room.setPricePerNight(updatedRoom.getPricePerNight());
         room.setIsAvailable(updatedRoom.getIsAvailable());
         room.setAmenities(updatedRoom.getAmenities());
+        room.setImageUrl(updatedRoom.getImageUrl()); // Update image URL
+        room.setRoomType(updatedRoom.getRoomType());
         roomRepository.save(room);
         return this.mapRoomEntityToRoomDTO(room);
     }
@@ -59,6 +61,8 @@ public class RoomServiceImpl implements RoomService {
         roomDTO.setPricePerNight(room.getPricePerNight());
         roomDTO.setIsAvailable(room.getIsAvailable());
         roomDTO.setAmenities(room.getAmenities());
+        roomDTO.setImageUrl(room.getImageUrl());
+        roomDTO.setRoomType(room.getRoomType());
         return roomDTO;
     }
 }

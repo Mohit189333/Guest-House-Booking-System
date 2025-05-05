@@ -18,6 +18,11 @@ public class Room {
     @ElementCollection // This annotation is used to specify that the field is a collection of basic types or embeddable classes
     private List<String> amenities;
 
+    private String imageUrl; // New field for storing the image URL
+
+    @Enumerated(EnumType.STRING)
+    private RoomType roomType;
+
     public Room() {}
 
     public Room(String name, String description, Double pricePerNight, Boolean isAvailable, List<String> amenities) {
@@ -26,6 +31,7 @@ public class Room {
         this.pricePerNight = pricePerNight;
         this.isAvailable = isAvailable;
         this.amenities = amenities;
+        this.imageUrl = imageUrl;
     }
 
     // Getters and Setters
@@ -75,5 +81,21 @@ public class Room {
 
     public void setAmenities(List<String> amenities) {
         this.amenities = amenities;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public RoomType getRoomType() {
+        return roomType;
+    }
+
+    public void setRoomType(RoomType roomType) {
+        this.roomType = roomType;
     }
 }
