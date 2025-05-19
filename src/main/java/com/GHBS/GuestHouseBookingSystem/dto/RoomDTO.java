@@ -23,4 +23,6 @@ public class RoomDTO {
     private String imageUrl; // New field for storing the image URL
 
     private RoomType roomType;
+
+
 }

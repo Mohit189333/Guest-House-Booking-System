@@ -1,17 +1,21 @@
 package com.GHBS.GuestHouseBookingSystem.security;
 
 import com.GHBS.GuestHouseBookingSystem.service.CustomUserDetailsService;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.multipart.support.MultipartFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -27,12 +31,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/home").permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Only ADMIN can access this
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")// Both USER and ADMIN can access this
-                        .requestMatchers("/api/rooms/available").permitAll()
+                        // Public endpoints
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/home",
+                                "/api/rooms/available",
+                                "/api/rooms/{id}"
+                        ).permitAll()
+
+                        // Admin-only endpoints
+                        .requestMatchers(
+                                "/api/admin/**"
+                        ).hasRole("ADMIN")
+//                            .requestMatchers("/api/bookings/**").hasAnyRole("USER", "ADMIN") // ✅ Add this line
+
+                        // User endpoints
+                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -56,5 +76,13 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public FilterRegistrationBean<MultipartFilter> multipartFilter() {
+        FilterRegistrationBean<MultipartFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new MultipartFilter());
+        registration.addUrlPatterns("/*");
+        return registration;
     }
 }

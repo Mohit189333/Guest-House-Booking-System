@@ -1,6 +1,9 @@
 package com.GHBS.GuestHouseBookingSystem.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,6 +26,13 @@ public class Room {
     @Enumerated(EnumType.STRING)
     private RoomType roomType;
 
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @JsonManagedReference
+    private List<Bed> beds = new ArrayList<>();
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Booking> bookings = new ArrayList<>();
+
     public Room() {}
 
     public Room(String name, String description, Double pricePerNight, Boolean isAvailable, List<String> amenities) {
@@ -31,7 +41,15 @@ public class Room {
         this.pricePerNight = pricePerNight;
         this.isAvailable = isAvailable;
         this.amenities = amenities;
-        this.imageUrl = imageUrl;
+    }
+
+
+    public List<Bed> getBeds() {
+        return beds;
+    }
+
+    public void setBeds(List<Bed> beds) {
+        this.beds = beds;
     }
 
     // Getters and Setters

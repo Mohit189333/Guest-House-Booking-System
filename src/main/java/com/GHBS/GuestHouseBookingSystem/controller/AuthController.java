@@ -6,6 +6,8 @@ import com.GHBS.GuestHouseBookingSystem.repo.RoleRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
 import com.GHBS.GuestHouseBookingSystem.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,12 +46,16 @@ public class AuthController {
 
     // Registration Endpoint
     @PostMapping("/register")//      http://localhost:8080/api/auth/register?role=${role}
-    public String registerUser(@RequestBody User user, @RequestParam(name = "role", defaultValue = "USER") String roleName) {
+    public ResponseEntity<String> registerUser(@RequestBody User user, @RequestParam(name = "role", defaultValue = "USER") String roleName) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            return "Username already exists!";
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Username already exists!");
         }
         if (userRepository.existsByEmail(user.getEmail())) {
-            return "Email already exists!";
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Email already exists!");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -63,7 +69,9 @@ public class AuthController {
 
             // Check if an admin already exists
             if (userRepository.existsByRolesContaining(adminRole)) {
-                return "An admin user already exists. Registration for additional admins is not allowed.";
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("An admin user already exists. Registration for additional admins is not allowed.");
             }
 
             user.setRoles(List.of(adminRole));
@@ -77,12 +85,12 @@ public class AuthController {
         }
 
         userRepository.save(user);
-        return "User registered successfully!";
+        return ResponseEntity.ok("User registered successfully!");
     }
 
     // Login Endpoint
     @PostMapping("/login")
-    public String loginUser(@RequestBody User user) {
+    public ResponseEntity<String> loginUser(@RequestBody User user) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
         // Load user details
@@ -94,7 +102,7 @@ public class AuthController {
                 .collect(Collectors.toList());
 
         // Generate JWT token with username and roles
-        return jwtUtils.generateToken(userDetails.getUsername(), roles);
+        return ResponseEntity.ok(jwtUtils.generateToken(userDetails.getUsername(), roles));
     }
 
     @GetMapping("/home")
