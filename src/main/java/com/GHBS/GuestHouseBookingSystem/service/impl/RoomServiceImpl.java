@@ -27,10 +27,10 @@ public class RoomServiceImpl implements RoomService {
     @Autowired
     private RoomRepository roomRepository;
 
-    private static final String BUCKET_NAME = "myhms-img";
-    private static final String REGION = "ap-south-1";
-    private static final String ACCESS_KEY = "AKIA3FLDZRGVP4Q63G5A";
-    private static final String SECRET_KEY = "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";
+    private static final String BUCKET_NAME = "";
+    private static final String REGION = "";
+    private static final String ACCESS_KEY = "";
+    private static final String SECRET_KEY = "";
 
     private final S3Client s3Client;
 
@@ -42,41 +42,41 @@ public class RoomServiceImpl implements RoomService {
                 .build();
     }
 
-    @Override
-    public URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException {
-        // Fetch the room entity
-        Room room = roomRepository.findById(id).orElseThrow(() -> new RuntimeException("Room not found!"));
-
-        // Generate the S3 file name
-        String fileName = "rooms/" + id + "/" + file.getOriginalFilename();
-
-        // Build the S3 PutObjectRequest
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(BUCKET_NAME)
-                .key(fileName)
-                .contentType(file.getContentType()) // Set the correct content type
-                .build();
-
-        try {
-            // Use InputStream from MultipartFile for S3 upload
-            s3Client.putObject(
-                    putObjectRequest,
-                    software.amazon.awssdk.core.sync.RequestBody.fromInputStream(file.getInputStream(), file.getSize())
-            );
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to upload image to S3: " + e.getMessage(), e);
-        }
-
-        // Generate the S3 file URL
-        String imageUrl = "https://" + BUCKET_NAME + ".s3." + REGION + ".amazonaws.com/" + fileName;
-
-        // Update the room entity with the image URL
-        room.setImageUrl(imageUrl);
-        roomRepository.save(room);
-
-        // Return the S3 file URL
-        return new URL(imageUrl);
-    }
+//    @Override
+//    public URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException {
+//        // Fetch the room entity
+//        Room room = roomRepository.findById(id).orElseThrow(() -> new RuntimeException("Room not found!"));
+//
+//        // Generate the S3 file name
+//        String fileName = "rooms/" + id + "/" + file.getOriginalFilename();
+//
+//        // Build the S3 PutObjectRequest
+//        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+//                .bucket(BUCKET_NAME)
+//                .key(fileName)
+//                .contentType(file.getContentType()) // Set the correct content type
+//                .build();
+//
+//        try {
+//            // Use InputStream from MultipartFile for S3 upload
+//            s3Client.putObject(
+//                    putObjectRequest,
+//                    software.amazon.awssdk.core.sync.RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+//            );
+//        } catch (Exception e) {
+//            throw new RuntimeException("Failed to upload image to S3: " + e.getMessage(), e);
+//        }
+//
+//        // Generate the S3 file URL
+//        String imageUrl = "https://" + BUCKET_NAME + ".s3." + REGION + ".amazonaws.com/" + fileName;
+//
+//        // Update the room entity with the image URL
+//        room.setImageUrl(imageUrl);
+//        roomRepository.save(room);
+//
+//        // Return the S3 file URL
+//        return new URL(imageUrl);
+//    }
 
     @Override
     public RoomDTO getRoomById(Long id) {
@@ -101,6 +101,7 @@ public class RoomServiceImpl implements RoomService {
 
             return mapRoomEntityToRoomDTO(savedRoom);
         } catch (Exception e) {
+            e.printStackTrace(); // Add this line
             throw new RuntimeException("Failed to add room: " + e.getMessage(), e);
         }
     }
@@ -123,22 +124,31 @@ public class RoomServiceImpl implements RoomService {
 
             return "https://" + BUCKET_NAME + ".s3." + REGION + ".amazonaws.com/" + fileName;
         } catch (Exception e) {
+            e.printStackTrace(); // Add this line
             throw new RuntimeException("Failed to upload image to S3: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public RoomDTO updateRoom(Long id, Room updatedRoom) {
-        Room room = roomRepository.findById(id).orElseThrow(() -> new RuntimeException("Room not found!"));
+    public RoomDTO updateRoom(Long id, Room updatedRoom, MultipartFile file) {
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Room not found!"));
+
         room.setName(updatedRoom.getName());
         room.setDescription(updatedRoom.getDescription());
         room.setPricePerNight(updatedRoom.getPricePerNight());
         room.setIsAvailable(updatedRoom.getIsAvailable());
         room.setAmenities(updatedRoom.getAmenities());
-        room.setImageUrl(updatedRoom.getImageUrl()); // Update image URL
         room.setRoomType(updatedRoom.getRoomType());
+
+        // If a new image is provided, upload it
+        if (file != null && !file.isEmpty()) {
+            String imageUrl = uploadImageToS3(id, file);
+            room.setImageUrl(imageUrl);
+        }
+
         roomRepository.save(room);
-        return this.mapRoomEntityToRoomDTO(room);
+        return mapRoomEntityToRoomDTO(room);
     }
 
     @Override

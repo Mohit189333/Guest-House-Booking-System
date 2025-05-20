@@ -11,13 +11,13 @@ import java.util.List;
 public interface RoomService {
     RoomDTO addRoom(Room room, MultipartFile file);
 
-    RoomDTO updateRoom(Long id, Room updatedRoom);
+    RoomDTO updateRoom(Long id, Room updatedRoom, MultipartFile file);
 
     void deleteRoomById(Long id);
 
     List<RoomDTO> getAvailableRooms();
 
-    URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException;
+//    URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException;
 
     RoomDTO getRoomById(Long id);
 }
