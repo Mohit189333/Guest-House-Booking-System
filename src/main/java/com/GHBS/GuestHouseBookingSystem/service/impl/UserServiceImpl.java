@@ -4,6 +4,7 @@ import com.GHBS.GuestHouseBookingSystem.entity.User;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
 import com.GHBS.GuestHouseBookingSystem.service.interfac.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +14,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public List<User> getAllUsers() {
@@ -49,7 +53,7 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsById(id)) {
             User existingUser = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found!"));
             existingUser.setUsername(userDetails.getUsername());
-            existingUser.setPassword(userDetails.getPassword());
+            existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
             existingUser.setEmail(userDetails.getEmail());
             return userRepository.save(existingUser);
         }
