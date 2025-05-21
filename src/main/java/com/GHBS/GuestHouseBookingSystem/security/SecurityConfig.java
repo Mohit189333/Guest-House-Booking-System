@@ -43,7 +43,8 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/home",
                                 "/api/rooms/available",
-                                "/api/rooms/{id}"
+                                "/api/rooms/{id}",
+                                "/api/auth/forgot-password", "/api/auth/reset-password"
                         ).permitAll()
 
                         // Admin-only endpoints

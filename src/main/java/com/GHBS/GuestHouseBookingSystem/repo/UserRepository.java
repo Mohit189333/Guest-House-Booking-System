@@ -17,4 +17,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Custom query to check if a user with the ADMIN role exists
     boolean existsByRolesContaining(Role role);
+
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByResetToken(String token);
 }

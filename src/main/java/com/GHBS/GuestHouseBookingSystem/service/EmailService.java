@@ -15,7 +15,7 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendBookingConfirmation(String toEmail, String subject, String body) {
+    public void sendEmail(String toEmail, String subject, String body) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("noreply@guesthouse.com");
@@ -24,8 +24,18 @@ public class EmailService {
             message.setText(body);
             mailSender.send(message);
         } catch (Exception e) {
-            // Log the error but don't break the booking flow
             System.err.println("Error sending email: " + e.getMessage());
         }
+    }
+
+    public void sendPasswordResetEmail(String toEmail, String resetLink) {
+        String subject = "Password Reset Request";
+        String body = "To reset your password, click the following link:\n" + resetLink +
+                "\n\nIf you didn't request this, ignore this email.";
+        sendEmail(toEmail, subject, body);
+    }
+
+    public void sendBookingConfirmation(String toEmail, String subject, String body) {
+        sendEmail(toEmail, subject, body);
     }
 }

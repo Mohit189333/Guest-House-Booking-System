@@ -4,7 +4,9 @@ import com.GHBS.GuestHouseBookingSystem.entity.Role;
 import com.GHBS.GuestHouseBookingSystem.entity.User;
 import com.GHBS.GuestHouseBookingSystem.repo.RoleRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
+import com.GHBS.GuestHouseBookingSystem.service.EmailService;
 import com.GHBS.GuestHouseBookingSystem.utils.JwtUtils;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +18,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController //combines controller + response body(returns a json response)
@@ -43,6 +44,9 @@ public class AuthController {
 
     @Autowired
     private UserDetailsService userDetailsService;
+
+    @Autowired
+    private EmailService emailService;
 
     // Registration Endpoint
     @PostMapping("/register")//      http://localhost:8080/api/auth/register?role=${role}
@@ -105,17 +109,74 @@ public class AuthController {
         return ResponseEntity.ok(jwtUtils.generateToken(userDetails.getUsername(), roles));
     }
 
-    @GetMapping("/home")
-    public Map<String, Object> getUserDetails(Authentication authentication) {
-        String username = authentication.getName(); // Get username from Authentication
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> sendForgotPasswordEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required.");
+        }
 
-        Map<String, Object> userDetails = new HashMap<>();
-        userDetails.put("username", user.getUsername());
-        userDetails.put("email", user.getEmail());
-        userDetails.put("roles", user.getRoles().stream().map(role -> role.getName()).toList());
+        // Find user by email
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            // For security, do not reveal if email exists
+            return ResponseEntity.ok("If an account with this email exists, a reset link has been sent.");
+        }
 
-        return userDetails;
+        User user = optionalUser.get();
+
+        // Generate token and expiry
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+
+        // Build reset link (adjust the frontend URL as needed)
+        String resetLink = "http://localhost:3000/reset-password/" + token;
+        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+
+        // Send email
+        String subject = "Password Reset Request";
+        String text = "To reset your password, click the link below:\n" + resetLink +
+                "\n\nIf you didn't request a password reset, you can ignore this email.";
+
+        emailService.sendEmail(user.getEmail(), subject, text);
+
+        // Always return a generic message for security
+        return ResponseEntity.ok("If an account with this email exists, a reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+        System.out.println("Token: " + token + " | Password: " + newPassword);
+        if (token == null || token.isEmpty() || newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Collections.singletonMap("message", "Token and new password are required."));
+        }
+
+        Optional<User> optionalUser = userRepository.findByResetToken(token);
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Collections.singletonMap("message", "Invalid or expired reset token."));
+        }
+
+        User user = optionalUser.get();
+
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Collections.singletonMap("message", "Reset token has expired."));
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Collections.singletonMap("message", "Password has been reset successfully."));
     }
 }
