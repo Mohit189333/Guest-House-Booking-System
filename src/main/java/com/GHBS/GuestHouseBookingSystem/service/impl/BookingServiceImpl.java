@@ -34,8 +34,6 @@ public class BookingServiceImpl implements BookingService {
     @Autowired
     private EmailService emailService;
 
-    @Autowired
-    private NotificationService notificationService;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest) {
@@ -75,6 +73,16 @@ public class BookingServiceImpl implements BookingService {
                 bookingRequest.getCheckOutDate());
         emailService.sendBookingConfirmation(user.getEmail(), subject, body);
 
+        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
+        String adminSubject = "Booking Request";
+        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s",
+                booking.getId(),
+                user.getUsername(),
+                room.getName(),
+                bookingRequest.getCheckInDate(),
+                bookingRequest.getCheckOutDate());
+
+        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
         return convertToDto(savedBooking);
     }
 
@@ -114,6 +122,16 @@ public class BookingServiceImpl implements BookingService {
                 booking.getCheckOutDate());
         emailService.sendBookingConfirmation(booking.getUser().getEmail(), subject, body);
 
+        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
+        String adminSubject = "Booking Approved Notification";
+        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s",
+                booking.getId(),
+                booking.getUser().getUsername(),
+                booking.getRoom().getName(),
+                booking.getCheckInDate(),
+                booking.getCheckOutDate());
+
+        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
         return convertToDto(updatedBooking);
     }
 
@@ -135,6 +153,18 @@ public class BookingServiceImpl implements BookingService {
                 booking.getCheckOutDate(),
                 reason);
         emailService.sendBookingConfirmation(booking.getUser().getEmail(), subject, body);
+
+        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
+        String adminSubject = "Booking Rejected Notification";
+        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s\nReason: %s",
+                booking.getId(),
+                booking.getUser().getUsername(),
+                booking.getRoom().getName(),
+                booking.getCheckInDate(),
+                booking.getCheckOutDate(),
+                reason);
+
+        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
 
         return convertToDto(updatedBooking);
     }
@@ -167,7 +197,7 @@ public class BookingServiceImpl implements BookingService {
         bookingRepository.save(booking);
 
         // 6. Send notification (optional)
-        notificationService.sendCancellationNotification(
+        emailService.sendCancellationNotification(
                 booking.getUser().getEmail(),
                 booking.getId(),
                 booking.getRoom().getName()

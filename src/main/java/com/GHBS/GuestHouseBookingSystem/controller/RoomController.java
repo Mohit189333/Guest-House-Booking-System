@@ -33,6 +33,7 @@ public class RoomController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RoomDTO> addRoom(
+            @RequestParam Long guestHouseId,  // ← Use ID here
             @RequestParam String name,
             @RequestParam String description,
             @RequestParam double pricePerNight,
@@ -53,7 +54,7 @@ public class RoomController {
             room.setAmenities(amenitiesList);
             room.setRoomType(roomType);
 
-            RoomDTO addedRoom = roomService.addRoom(room, file);
+            RoomDTO addedRoom = roomService.addRoom(guestHouseId, room, file);
             return ResponseEntity.status(HttpStatus.CREATED).body(addedRoom);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -71,6 +72,7 @@ public class RoomController {
             @RequestParam boolean isAvailable,
             @RequestParam String amenities,
             @RequestParam RoomType roomType,
+            @RequestParam(value = "guestHouseId", required = false) Long guestHouseId,
             @RequestParam(value = "file", required = false) MultipartFile file) {
 
         try {
@@ -84,11 +86,14 @@ public class RoomController {
             updatedRoom.setAmenities(amenitiesList);
             updatedRoom.setRoomType(roomType);
 
-            return ResponseEntity.ok(roomService.updateRoom(id, updatedRoom, file));
+            // Pass guestHouseId to the service if present
+            return ResponseEntity.ok(roomService.updateRoom(id, updatedRoom, file, guestHouseId));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
     // Admin-only: Delete a room
     @PreAuthorize("hasRole('ADMIN')")

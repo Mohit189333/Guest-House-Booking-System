@@ -33,6 +33,10 @@ public class Room {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Booking> bookings = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "guest_house_id")
+    private GuestHouse guestHouse;
+
     public Room() {}
 
     public Room(String name, String description, Double pricePerNight, Boolean isAvailable, List<String> amenities) {
@@ -43,6 +47,13 @@ public class Room {
         this.amenities = amenities;
     }
 
+    public GuestHouse getGuestHouse() {
+        return guestHouse;
+    }
+
+    public void setGuestHouse(GuestHouse guestHouse) {
+        this.guestHouse = guestHouse;
+    }
 
     public List<Bed> getBeds() {
         return beds;

@@ -1,7 +1,10 @@
 package com.GHBS.GuestHouseBookingSystem.service.impl;
 
 import com.GHBS.GuestHouseBookingSystem.dto.RoomDTO;
+import com.GHBS.GuestHouseBookingSystem.entity.GuestHouse;
 import com.GHBS.GuestHouseBookingSystem.entity.Room;
+import com.GHBS.GuestHouseBookingSystem.exception.ResourceNotFoundException;
+import com.GHBS.GuestHouseBookingSystem.repo.GuestHouseRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.RoomRepository;
 import com.GHBS.GuestHouseBookingSystem.service.interfac.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +17,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +24,9 @@ import java.util.UUID;
 
 @Service
 public class RoomServiceImpl implements RoomService {
+
+    @Autowired
+    private GuestHouseRepository guestHouseRepository;
 
     @Autowired
     private RoomRepository roomRepository;
@@ -86,8 +90,13 @@ public class RoomServiceImpl implements RoomService {
 
 
     @Override
-    public RoomDTO addRoom(Room room, MultipartFile file) {
+    public RoomDTO addRoom(Long guestHouseId, Room room, MultipartFile file) {
         try {
+            GuestHouse guestHouse = guestHouseRepository.findById(guestHouseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("GuestHouse not found"));
+
+            room.setGuestHouse(guestHouse);
+            guestHouse.getRooms().add(room);
             // Save the room entity first (without image URL)
             Room savedRoom = roomRepository.save(room);
 
@@ -98,7 +107,7 @@ public class RoomServiceImpl implements RoomService {
                 savedRoom.setImageUrl(imageUrl);
                 roomRepository.save(savedRoom);
             }
-
+            guestHouseRepository.save(guestHouse);
             return mapRoomEntityToRoomDTO(savedRoom);
         } catch (Exception e) {
             e.printStackTrace(); // Add this line
@@ -130,7 +139,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomDTO updateRoom(Long id, Room updatedRoom, MultipartFile file) {
+    public RoomDTO updateRoom(Long id, Room updatedRoom, MultipartFile file, Long guestHouseId) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Room not found!"));
 
@@ -141,15 +150,23 @@ public class RoomServiceImpl implements RoomService {
         room.setAmenities(updatedRoom.getAmenities());
         room.setRoomType(updatedRoom.getRoomType());
 
+        // If guestHouseId is provided and different, move the room
+        if (guestHouseId != null && (room.getGuestHouse() == null || !room.getGuestHouse().getId().equals(guestHouseId))) {
+            GuestHouse newGuestHouse = guestHouseRepository.findById(guestHouseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("GuestHouse not found"));
+            room.setGuestHouse(newGuestHouse); // <-- This is enough
+        }
+
         // If a new image is provided, upload it
         if (file != null && !file.isEmpty()) {
             String imageUrl = uploadImageToS3(id, file);
             room.setImageUrl(imageUrl);
         }
 
-        roomRepository.save(room);
-        return mapRoomEntityToRoomDTO(room);
+        Room saved = roomRepository.save(room);
+        return mapRoomEntityToRoomDTO(saved);
     }
+
 
     @Override
     public void deleteRoomById(Long id) {
@@ -179,6 +196,11 @@ public class RoomServiceImpl implements RoomService {
         roomDTO.setAmenities(room.getAmenities());
         roomDTO.setImageUrl(room.getImageUrl());
         roomDTO.setRoomType(room.getRoomType());
+        if (room.getGuestHouse() != null) {
+            roomDTO.setGuestHouseId(room.getGuestHouse().getId());
+            roomDTO.setGuestHouseName(room.getGuestHouse().getName());
+        }
         return roomDTO;
     }
 }
+

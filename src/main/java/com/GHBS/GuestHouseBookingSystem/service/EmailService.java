@@ -3,6 +3,7 @@ package com.GHBS.GuestHouseBookingSystem.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,5 +38,21 @@ public class EmailService {
 
     public void sendBookingConfirmation(String toEmail, String subject, String body) {
         sendEmail(toEmail, subject, body);
+    }
+
+    public void sendMailToAdmin(String toEmail,String subject, String body) {
+        sendEmail(toEmail, subject, body);
+    }
+
+    @Async
+    public void sendCancellationNotification(String email, Long bookingId, String roomName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Booking Cancellation Confirmation");
+        message.setText(String.format(
+                "Your booking #%d for %s has been cancelled successfully.",
+                bookingId, roomName
+        ));
+        mailSender.send(message);
     }
 }
