@@ -2,6 +2,7 @@ package com.GHBS.GuestHouseBookingSystem.dto;
 
 import com.GHBS.GuestHouseBookingSystem.entity.BookingStatus;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class BookingResponse {
     private Long id;
@@ -10,6 +11,24 @@ public class BookingResponse {
     private LocalDate checkOutDate;
     private BookingStatus status;
     private String rejectionReason;
+    private String roomName; // Optional: Include room name for better context
+    private String userName;
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
 
     // Getters and Setters
     public Long getId() {

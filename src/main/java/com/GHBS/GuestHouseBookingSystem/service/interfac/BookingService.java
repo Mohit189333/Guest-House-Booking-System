@@ -2,7 +2,9 @@ package com.GHBS.GuestHouseBookingSystem.service.interfac;
 
 import com.GHBS.GuestHouseBookingSystem.dto.BookingRequest;
 import com.GHBS.GuestHouseBookingSystem.dto.BookingResponse;
+import com.GHBS.GuestHouseBookingSystem.entity.BookingStatus;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface BookingService {
@@ -17,4 +19,5 @@ public interface BookingService {
     BookingResponse rejectBooking(Long id, String reason);
 
     void cancelBooking(Long id, String username);
+
 }

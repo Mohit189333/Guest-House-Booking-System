@@ -2,6 +2,7 @@ package com.GHBS.GuestHouseBookingSystem.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 public class Booking {
@@ -31,6 +32,7 @@ public class Booking {
     private BookingStatus status = BookingStatus.PENDING;
 
     private String rejectionReason;
+
 
     // Getters and Setters
     public Long getId() {

@@ -2,13 +2,18 @@ package com.GHBS.GuestHouseBookingSystem.controller;
 
 import com.GHBS.GuestHouseBookingSystem.dto.BookingRequest;
 import com.GHBS.GuestHouseBookingSystem.dto.BookingResponse;
+import com.GHBS.GuestHouseBookingSystem.entity.BookingStatus;
 import com.GHBS.GuestHouseBookingSystem.service.interfac.BookingService;
-import com.GHBS.GuestHouseBookingSystem.utils.JwtUtils;
+import com.GHBS.GuestHouseBookingSystem.security.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Method;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -24,6 +29,7 @@ public class BookingController {
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@RequestBody BookingRequest bookingRequest) {
+
         BookingResponse response = bookingService.createBooking(bookingRequest);
         return ResponseEntity.ok(response);
     }

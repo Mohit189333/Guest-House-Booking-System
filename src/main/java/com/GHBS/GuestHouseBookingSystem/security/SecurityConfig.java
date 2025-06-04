@@ -1,10 +1,9 @@
 package com.GHBS.GuestHouseBookingSystem.security;
 
-import com.GHBS.GuestHouseBookingSystem.service.CustomUserDetailsService;
+import com.GHBS.GuestHouseBookingSystem.service.impl.CustomUserDetailsService;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,7 +18,6 @@ import org.springframework.web.multipart.support.MultipartFilter;
 
 @Configuration
 public class SecurityConfig {
-
     //these are injected using constructor injection
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomUserDetailsService customUserDetailsService;
@@ -41,21 +39,11 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
-                                "/api/auth/home",
                                 "/api/rooms/available",
                                 "/api/rooms/{id}",
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/guest-houses/**"
                         ).permitAll()
-
-                        // Admin-only endpoints
-                        .requestMatchers(
-                                "/api/admin/**"
-                        ).hasRole("ADMIN")
-//                            .requestMatchers("/api/bookings/**").hasAnyRole("USER", "ADMIN") // ✅ Add this line
-
-                        // User endpoints
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

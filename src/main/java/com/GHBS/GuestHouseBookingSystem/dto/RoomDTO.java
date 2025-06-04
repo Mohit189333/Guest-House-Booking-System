@@ -25,5 +25,9 @@ public class RoomDTO {
     private RoomType roomType;
     private Long guestHouseId; // Add this field
     private String guestHouseName;
+
+    private Integer bedCount; // Add this new field
+
+
 }
 

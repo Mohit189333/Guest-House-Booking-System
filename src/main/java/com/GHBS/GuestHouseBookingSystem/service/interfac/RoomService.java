@@ -4,6 +4,7 @@ import com.GHBS.GuestHouseBookingSystem.dto.RoomDTO;
 import com.GHBS.GuestHouseBookingSystem.entity.Room;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface RoomService {
@@ -18,4 +19,6 @@ public interface RoomService {
 //    URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException;
 
     RoomDTO getRoomById(Long id);
+
+    List<RoomDTO> getAvailableRoomsBetweenDates(LocalDate checkInDate, LocalDate checkOutDate);
 }

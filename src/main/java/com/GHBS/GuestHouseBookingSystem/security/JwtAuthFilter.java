@@ -1,6 +1,5 @@
 package com.GHBS.GuestHouseBookingSystem.security;
 
-import com.GHBS.GuestHouseBookingSystem.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

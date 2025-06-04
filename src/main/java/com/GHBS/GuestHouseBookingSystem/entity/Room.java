@@ -27,15 +27,13 @@ public class Room {
     private RoomType roomType;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-//    @JsonManagedReference
-    private List<Bed> beds = new ArrayList<>();
-
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Booking> bookings = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guest_house_id")
     private GuestHouse guestHouse;
+
+    private Integer bedCount; // Add this new field
 
     public Room() {}
 
@@ -55,13 +53,6 @@ public class Room {
         this.guestHouse = guestHouse;
     }
 
-    public List<Bed> getBeds() {
-        return beds;
-    }
-
-    public void setBeds(List<Bed> beds) {
-        this.beds = beds;
-    }
 
     // Getters and Setters
     public Long getId() {
@@ -126,5 +117,13 @@ public class Room {
 
     public void setRoomType(RoomType roomType) {
         this.roomType = roomType;
+    }
+
+    public Integer getBedCount() {
+        return bedCount;
+    }
+
+    public void setBedCount(Integer bedCount) {
+        this.bedCount = bedCount;
     }
 }

@@ -5,14 +5,12 @@ import com.GHBS.GuestHouseBookingSystem.entity.User;
 import com.GHBS.GuestHouseBookingSystem.repo.RoleRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
 import com.GHBS.GuestHouseBookingSystem.service.EmailService;
-import com.GHBS.GuestHouseBookingSystem.utils.JwtUtils;
-import jakarta.validation.Valid;
+import com.GHBS.GuestHouseBookingSystem.security.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,7 +46,6 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
-    // Registration Endpoint
     @PostMapping("/register")//      http://localhost:8080/api/auth/register?role=${role}
     public ResponseEntity<String> registerUser(@RequestBody User user, @RequestParam(name = "role", defaultValue = "USER") String roleName) {
         if (userRepository.existsByUsername(user.getUsername())) {

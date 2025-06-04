@@ -1,4 +1,4 @@
-package com.GHBS.GuestHouseBookingSystem.service;
+package com.GHBS.GuestHouseBookingSystem.service.impl;
 
 
 import com.GHBS.GuestHouseBookingSystem.entity.User;

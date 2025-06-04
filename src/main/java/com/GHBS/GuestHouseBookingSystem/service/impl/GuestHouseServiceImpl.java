@@ -129,8 +129,10 @@ public class GuestHouseServiceImpl implements GuestHouseService {
                         roomDTO.setAmenities(room.getAmenities());
                         roomDTO.setImageUrl(room.getImageUrl());
                         roomDTO.setRoomType(room.getRoomType());
+                        roomDTO.setBedCount(room.getBedCount());
                         roomDTO.setGuestHouseId(guestHouse.getId());
-                        roomDTO.setGuestHouseName(guestHouse.getName());                        return roomDTO;
+                        roomDTO.setGuestHouseName(guestHouse.getName());
+                        return roomDTO;
                     })
                     .collect(Collectors.toList()));
         }
@@ -148,6 +150,7 @@ public class GuestHouseServiceImpl implements GuestHouseService {
         dto.setAmenities(room.getAmenities());
         dto.setImageUrl(room.getImageUrl());
         dto.setRoomType(room.getRoomType());
+        dto.setBedCount(room.getBedCount());
 
         // Only include guest house ID to prevent circular reference
         if (room.getGuestHouse() != null) {

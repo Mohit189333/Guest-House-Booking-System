@@ -1,4 +1,4 @@
-package com.GHBS.GuestHouseBookingSystem.utils;
+package com.GHBS.GuestHouseBookingSystem.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

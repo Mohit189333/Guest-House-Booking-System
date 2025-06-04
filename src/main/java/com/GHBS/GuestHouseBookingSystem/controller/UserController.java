@@ -56,7 +56,7 @@ public class UserController {
 
         // Prevent non-admins from changing roles
         if (!authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))) {
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ADMIN"))) {
             userDetails.setRoles(null); // Preserve existing roles
         }
 
@@ -73,6 +73,7 @@ public class UserController {
     }
 
     // Get current user profile
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @GetMapping("/me")
     public ResponseEntity<UserDTO> getCurrentUser(Authentication authentication) {
         String username = authentication.getName();
@@ -82,6 +83,7 @@ public class UserController {
     }
 
     // Update current user profile
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PutMapping("/me")
     public ResponseEntity<UserDTO> updateCurrentUser(
             @RequestBody User userDetails,

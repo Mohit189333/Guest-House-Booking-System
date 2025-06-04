@@ -4,6 +4,7 @@ import com.GHBS.GuestHouseBookingSystem.dto.RoomDTO;
 import com.GHBS.GuestHouseBookingSystem.entity.GuestHouse;
 import com.GHBS.GuestHouseBookingSystem.entity.Room;
 import com.GHBS.GuestHouseBookingSystem.exception.ResourceNotFoundException;
+import com.GHBS.GuestHouseBookingSystem.repo.BookingRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.GuestHouseRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.RoomRepository;
 import com.GHBS.GuestHouseBookingSystem.service.interfac.RoomService;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,10 +33,14 @@ public class RoomServiceImpl implements RoomService {
     @Autowired
     private RoomRepository roomRepository;
 
-    private static final String BUCKET_NAME = "";
-    private static final String REGION = "";
-    private static final String ACCESS_KEY = "";
-    private static final String SECRET_KEY = "";
+    @Autowired
+    private BookingRepository bookingRepository;
+
+
+    private static final String BUCKET_NAME = "myhms-img";
+    private static final String REGION = "ap-south-1";
+    private static final String ACCESS_KEY = "AKIA3FLDZRGVE2OIQ34L";
+    private static final String SECRET_KEY = "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";
 
     private final S3Client s3Client;
 
@@ -46,41 +52,6 @@ public class RoomServiceImpl implements RoomService {
                 .build();
     }
 
-//    @Override
-//    public URL uploadRoomImage(Long id, MultipartFile file) throws MalformedURLException {
-//        // Fetch the room entity
-//        Room room = roomRepository.findById(id).orElseThrow(() -> new RuntimeException("Room not found!"));
-//
-//        // Generate the S3 file name
-//        String fileName = "rooms/" + id + "/" + file.getOriginalFilename();
-//
-//        // Build the S3 PutObjectRequest
-//        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-//                .bucket(BUCKET_NAME)
-//                .key(fileName)
-//                .contentType(file.getContentType()) // Set the correct content type
-//                .build();
-//
-//        try {
-//            // Use InputStream from MultipartFile for S3 upload
-//            s3Client.putObject(
-//                    putObjectRequest,
-//                    software.amazon.awssdk.core.sync.RequestBody.fromInputStream(file.getInputStream(), file.getSize())
-//            );
-//        } catch (Exception e) {
-//            throw new RuntimeException("Failed to upload image to S3: " + e.getMessage(), e);
-//        }
-//
-//        // Generate the S3 file URL
-//        String imageUrl = "https://" + BUCKET_NAME + ".s3." + REGION + ".amazonaws.com/" + fileName;
-//
-//        // Update the room entity with the image URL
-//        room.setImageUrl(imageUrl);
-//        roomRepository.save(room);
-//
-//        // Return the S3 file URL
-//        return new URL(imageUrl);
-//    }
 
     @Override
     public RoomDTO getRoomById(Long id) {
@@ -149,6 +120,7 @@ public class RoomServiceImpl implements RoomService {
         room.setIsAvailable(updatedRoom.getIsAvailable());
         room.setAmenities(updatedRoom.getAmenities());
         room.setRoomType(updatedRoom.getRoomType());
+        room.setBedCount(updatedRoom.getBedCount());  // Make sure this line exists
 
         // If guestHouseId is provided and different, move the room
         if (guestHouseId != null && (room.getGuestHouse() == null || !room.getGuestHouse().getId().equals(guestHouseId))) {
@@ -185,6 +157,22 @@ public class RoomServiceImpl implements RoomService {
         return roomDTOList;
     }
 
+    @Override
+    public List<RoomDTO> getAvailableRoomsBetweenDates(LocalDate checkInDate, LocalDate checkOutDate) {
+        // Get all rooms
+        List<Room> allRooms = roomRepository.findAll();
+        List<Long> unavailableRoomIds = bookingRepository.findRoomIdsWithConflictingBookings(checkInDate, checkOutDate);
+
+        // Filter out unavailable rooms
+        List<RoomDTO> availableRooms = new ArrayList<>();
+        for (Room room : allRooms) {
+            if (!unavailableRoomIds.contains(room.getId())) {
+                availableRooms.add(mapRoomEntityToRoomDTO(room));
+            }
+        }
+        return availableRooms;
+    }
+
 
     private RoomDTO mapRoomEntityToRoomDTO(Room room) {
         RoomDTO roomDTO = new RoomDTO();
@@ -196,6 +184,8 @@ public class RoomServiceImpl implements RoomService {
         roomDTO.setAmenities(room.getAmenities());
         roomDTO.setImageUrl(room.getImageUrl());
         roomDTO.setRoomType(room.getRoomType());
+        roomDTO.setBedCount(room.getBedCount()); // Add this line
+
         if (room.getGuestHouse() != null) {
             roomDTO.setGuestHouseId(room.getGuestHouse().getId());
             roomDTO.setGuestHouseName(room.getGuestHouse().getName());

@@ -3,13 +3,21 @@ package com.GHBS.GuestHouseBookingSystem.service.impl;
 import com.GHBS.GuestHouseBookingSystem.dto.BookingRequest;
 import com.GHBS.GuestHouseBookingSystem.dto.BookingResponse;
 import com.GHBS.GuestHouseBookingSystem.entity.*;
+import com.GHBS.GuestHouseBookingSystem.exception.BusinessLogicException;
+import com.GHBS.GuestHouseBookingSystem.exception.ResourceNotFoundException;
+import com.GHBS.GuestHouseBookingSystem.exception.UnauthorizedAccessException;
 import com.GHBS.GuestHouseBookingSystem.repo.BookingRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.RoomRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
 import com.GHBS.GuestHouseBookingSystem.service.EmailService;
-import com.GHBS.GuestHouseBookingSystem.service.NotificationService;
 import com.GHBS.GuestHouseBookingSystem.service.interfac.BookingService;
+import jakarta.persistence.criteria.Join;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,6 +41,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Autowired
     private EmailService emailService;
+
 
 
     @Transactional
@@ -65,24 +74,9 @@ public class BookingServiceImpl implements BookingService {
         Booking savedBooking = bookingRepository.save(booking);
 
         // Send email notification
-        String subject = "Your booking request has been received";
-        String body = String.format("Dear %s,\n\nYour booking for room '%s' from %s to %s is pending approval.\n\nThank you!",
-                user.getUsername(),
-                room.getName(),
-                bookingRequest.getCheckInDate(),
-                bookingRequest.getCheckOutDate());
-        emailService.sendBookingConfirmation(user.getEmail(), subject, body);
+        emailService.sendBookingPendingUser(user, savedBooking);
+        emailService.sendBookingPendingAdmin(savedBooking);
 
-        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
-        String adminSubject = "Booking Request";
-        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s",
-                booking.getId(),
-                user.getUsername(),
-                room.getName(),
-                bookingRequest.getCheckInDate(),
-                bookingRequest.getCheckOutDate());
-
-        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
         return convertToDto(savedBooking);
     }
 
@@ -107,6 +101,9 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     public BookingResponse approveBooking(Long bookingId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String adminUsername = authentication.getName();
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
@@ -114,29 +111,17 @@ public class BookingServiceImpl implements BookingService {
         Booking updatedBooking = bookingRepository.save(booking);
 
         // Send approval email
-        String subject = "Your booking has been approved";
-        String body = String.format("Dear %s,\n\nYour booking for room '%s' from %s to %s has been approved.\n\nThank you!",
-                booking.getUser().getUsername(),
-                booking.getRoom().getName(),
-                booking.getCheckInDate(),
-                booking.getCheckOutDate());
-        emailService.sendBookingConfirmation(booking.getUser().getEmail(), subject, body);
+        emailService.sendBookingApprovedUser(updatedBooking.getUser(), updatedBooking);
+        emailService.sendBookingApprovedAdmin(updatedBooking);
 
-        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
-        String adminSubject = "Booking Approved Notification";
-        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s",
-                booking.getId(),
-                booking.getUser().getUsername(),
-                booking.getRoom().getName(),
-                booking.getCheckInDate(),
-                booking.getCheckOutDate());
-
-        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
         return convertToDto(updatedBooking);
     }
 
     @Transactional
     public BookingResponse rejectBooking(Long bookingId, String reason) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String adminUsername = authentication.getName();
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
@@ -145,26 +130,8 @@ public class BookingServiceImpl implements BookingService {
         Booking updatedBooking = bookingRepository.save(booking);
 
         // Send rejection email
-        String subject = "Your booking has been rejected";
-        String body = String.format("Dear %s,\n\nYour booking for room '%s' from %s to %s has been rejected.\nReason: %s\n\nThank you!",
-                booking.getUser().getUsername(),
-                booking.getRoom().getName(),
-                booking.getCheckInDate(),
-                booking.getCheckOutDate(),
-                reason);
-        emailService.sendBookingConfirmation(booking.getUser().getEmail(), subject, body);
-
-        String adminEmail = "12202080603007@adit.ac.in"; // ✅ Replace this with your actual admin email or fetch from config
-        String adminSubject = "Booking Rejected Notification";
-        String adminBody = String.format("Booking ID: %d has been rejected by the system.\n\nUser: %s\nRoom: %s\nFrom: %s\nTo: %s\nReason: %s",
-                booking.getId(),
-                booking.getUser().getUsername(),
-                booking.getRoom().getName(),
-                booking.getCheckInDate(),
-                booking.getCheckOutDate(),
-                reason);
-
-        emailService.sendMailToAdmin(adminEmail, adminSubject, adminBody);
+        emailService.sendBookingRejectedUser(updatedBooking.getUser(), updatedBooking, reason);
+        emailService.sendBookingRejectedAdmin(updatedBooking, reason);
 
         return convertToDto(updatedBooking);
     }
@@ -196,12 +163,9 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
-        // 6. Send notification (optional)
-        emailService.sendCancellationNotification(
-                booking.getUser().getEmail(),
-                booking.getId(),
-                booking.getRoom().getName()
-        );
+        // 6. Send notification
+        emailService.sendCancellationNotification(booking.getUser(), booking);
+
     }
 
     private BookingResponse convertToDto(Booking booking) {
@@ -212,24 +176,10 @@ public class BookingServiceImpl implements BookingService {
         response.setCheckOutDate(booking.getCheckOutDate());
         response.setStatus(booking.getStatus());
         response.setRejectionReason(booking.getRejectionReason());
+        response.setRoomName(booking.getRoom().getName());
+        response.setUserName(booking.getUser().getUsername());
+
         return response;
     }
 
-    public class ResourceNotFoundException extends RuntimeException {
-        public ResourceNotFoundException(String message) {
-            super(message);
-        }
-    }
-
-    public class UnauthorizedAccessException extends RuntimeException {
-        public UnauthorizedAccessException(String message) {
-            super(message);
-        }
-    }
-
-    public class BusinessLogicException extends RuntimeException {
-        public BusinessLogicException(String message) {
-            super(message);
-        }
-    }
 }
