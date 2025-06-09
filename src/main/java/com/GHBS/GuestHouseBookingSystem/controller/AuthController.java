@@ -1,11 +1,15 @@
 package com.GHBS.GuestHouseBookingSystem.controller;
 
+import com.GHBS.GuestHouseBookingSystem.dto.AuthRequest;
+import com.GHBS.GuestHouseBookingSystem.dto.AuthResponse;
+import com.GHBS.GuestHouseBookingSystem.dto.RegisterRequest;
 import com.GHBS.GuestHouseBookingSystem.entity.Role;
 import com.GHBS.GuestHouseBookingSystem.entity.User;
 import com.GHBS.GuestHouseBookingSystem.repo.RoleRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.UserRepository;
 import com.GHBS.GuestHouseBookingSystem.service.EmailService;
 import com.GHBS.GuestHouseBookingSystem.security.JwtUtils;
+import com.GHBS.GuestHouseBookingSystem.service.interfac.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,84 +30,27 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private AuthService authService;
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private JwtUtils jwtUtils;
+    private EmailService emailService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @PostMapping("/register")//      http://localhost:8080/api/auth/register?role=${role}
-    public ResponseEntity<String> registerUser(@RequestBody User user, @RequestParam(name = "role", defaultValue = "USER") String roleName) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Username already exists!");
-        }
-        if (userRepository.existsByEmail(user.getEmail())) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Email already exists!");
-        }
-
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // Check if the role is ADMIN and there is already an admin in the system
-        if ("ADMIN".equalsIgnoreCase(roleName)) {
-            Role adminRole = roleRepository.findByName("ADMIN");
-            if (adminRole == null) {
-                throw new RuntimeException("Error: Role 'ADMIN' is not found in the database. Please initialize roles.");
-            }
-
-            // Check if an admin already exists
-            if (userRepository.existsByRolesContaining(adminRole)) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("An admin user already exists. Registration for additional admins is not allowed.");
-            }
-
-            user.setRoles(List.of(adminRole));
-        } else {
-            // Default role is USER
-            Role userRole = roleRepository.findByName("USER");
-            if (userRole == null) {
-                throw new RuntimeException("Error: Role 'USER' is not found in the database. Please initialize roles.");
-            }
-            user.setRoles(List.of(userRole));
-        }
-
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully!");
+    // Registration
+    @PostMapping("/register")
+    public ResponseEntity<String> registerUser(@RequestBody RegisterRequest request, @RequestParam(name = "role", defaultValue = "USER") String roleName) {
+        return authService.register(request, roleName);
     }
 
-    // Login Endpoint
+    // Login
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody User user) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
-
-        // Load user details
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-
-        // Extract roles
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority())
-                .collect(Collectors.toList());
-
-        // Generate JWT token with username and roles
-        return ResponseEntity.ok(jwtUtils.generateToken(userDetails.getUsername(), roles));
+    public ResponseEntity<AuthResponse> loginUser(@RequestBody AuthRequest request) {
+        return authService.login(request);
     }
 
     @PostMapping("/forgot-password")
@@ -131,13 +78,6 @@ public class AuthController {
         // Build reset link (adjust the frontend URL as needed)
         String resetLink = "http://localhost:3000/reset-password/" + token;
         emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
-
-        // Send email
-        String subject = "Password Reset Request";
-        String text = "To reset your password, click the link below:\n" + resetLink +
-                "\n\nIf you didn't request a password reset, you can ignore this email.";
-
-        emailService.sendEmail(user.getEmail(), subject, text);
 
         // Always return a generic message for security
         return ResponseEntity.ok("If an account with this email exists, a reset link has been sent.");

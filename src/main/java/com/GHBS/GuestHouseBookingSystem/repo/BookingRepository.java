@@ -16,10 +16,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByStatus(BookingStatus status);
     List<Booking> findByRoomIdAndCheckOutDateAfterAndCheckInDateBefore(Long roomId, LocalDate checkInDate, LocalDate checkOutDate);
 
+    // this query finds room IDs that have bookings overlapping with the given check-in and check-out dates
     @Query("SELECT DISTINCT b.room.id FROM Booking b " +
             "WHERE b.status <> 'REJECTED' AND b.status <> 'CANCELLED' " +
             "AND b.checkInDate < :checkOutDate AND b.checkOutDate > :checkInDate")
     List<Long> findRoomIdsWithConflictingBookings(
             @Param("checkInDate") LocalDate checkInDate,
             @Param("checkOutDate") LocalDate checkOutDate);
+
+    List<Booking> findByRoomIdAndStatusAndCheckOutDateAfterAndCheckInDateBefore(
+            Long roomId, BookingStatus status, LocalDate checkInDate, LocalDate checkOutDate);
 }

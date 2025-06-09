@@ -5,6 +5,7 @@ import com.GHBS.GuestHouseBookingSystem.dto.BookingResponse;
 import com.GHBS.GuestHouseBookingSystem.entity.*;
 import com.GHBS.GuestHouseBookingSystem.exception.BusinessLogicException;
 import com.GHBS.GuestHouseBookingSystem.exception.ResourceNotFoundException;
+import com.GHBS.GuestHouseBookingSystem.exception.RoomUnavailableException;
 import com.GHBS.GuestHouseBookingSystem.exception.UnauthorizedAccessException;
 import com.GHBS.GuestHouseBookingSystem.repo.BookingRepository;
 import com.GHBS.GuestHouseBookingSystem.repo.RoomRepository;
@@ -42,8 +43,6 @@ public class BookingServiceImpl implements BookingService {
     @Autowired
     private EmailService emailService;
 
-
-
     @Transactional
     public BookingResponse createBooking(BookingRequest bookingRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -54,14 +53,16 @@ public class BookingServiceImpl implements BookingService {
         Room room = roomRepository.findById(bookingRequest.getRoomId())
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
-        // Check if room is available for the requested dates
-        List<Booking> conflictingBookings = bookingRepository.findByRoomIdAndCheckOutDateAfterAndCheckInDateBefore(
-                room.getId(),
-                bookingRequest.getCheckInDate(),
-                bookingRequest.getCheckOutDate());
+        //check if room is approved than not to allow other booking request
+        List<Booking> approvedBookings = bookingRepository
+                .findByRoomIdAndStatusAndCheckOutDateAfterAndCheckInDateBefore(
+                        room.getId(),
+                        BookingStatus.APPROVED,
+                        bookingRequest.getCheckInDate(),
+                        bookingRequest.getCheckOutDate());
 
-        if (!conflictingBookings.isEmpty()) {
-            throw new RuntimeException("The selected room is not available for the requested dates");
+        if (!approvedBookings.isEmpty()) {
+            throw new RoomUnavailableException("The selected room is not available for the requested dates");
         }
 
         Booking booking = new Booking();
@@ -101,8 +102,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     public BookingResponse approveBooking(Long bookingId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String adminUsername = authentication.getName();
+
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -119,8 +119,6 @@ public class BookingServiceImpl implements BookingService {
 
     @Transactional
     public BookingResponse rejectBooking(Long bookingId, String reason) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String adminUsername = authentication.getName();
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));

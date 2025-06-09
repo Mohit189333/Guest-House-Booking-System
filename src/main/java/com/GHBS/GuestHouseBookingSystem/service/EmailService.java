@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final String adminEmail = "12202080603007@adit.ac.in"; // TODO: Move to config
+    private final String adminEmail = ""; // TODO: Move to config
 
     @Autowired
     public EmailService(JavaMailSender mailSender) {
@@ -107,7 +107,7 @@ public class EmailService {
         sendEmail(adminEmail, subject, body);
     }
 
-    @Async
+
     public void sendCancellationNotification(User user, Booking booking) {
         String subject = "Booking Cancellation Confirmation";
         String body = String.format(

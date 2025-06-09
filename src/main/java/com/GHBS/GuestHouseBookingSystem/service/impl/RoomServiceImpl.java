@@ -37,10 +37,10 @@ public class RoomServiceImpl implements RoomService {
     private BookingRepository bookingRepository;
 
 
-    private static final String BUCKET_NAME = "myhms-img";
-    private static final String REGION = "ap-south-1";
-    private static final String ACCESS_KEY = "AKIA3FLDZRGVE2OIQ34L";
-    private static final String SECRET_KEY = "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";
+    private static final String BUCKET_NAME = "";
+    private static final String REGION = "";
+    private static final String ACCESS_KEY = "";
+    private static final String SECRET_KEY = "";
 
     private final S3Client s3Client;
 
